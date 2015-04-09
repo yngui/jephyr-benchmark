@@ -24,17 +24,28 @@
 
 package org.jvnet.zephyr.benchmark;
 
+import org.jvnet.zephyr.thread.continuation.Jsr166ForkJoinPoolExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Setup;
 
 import java.util.concurrent.locks.LockSupport;
 
 public class ZephyrThreadRingBenchmark extends AbstractRingBenchmark {
 
-    @Benchmark
-    @Override
-    public final void benchmark() throws InterruptedException {
-        Worker[] workers = new Worker[workerCount];
-        Worker first = new Worker();
+    private Worker[] workers;
+    private Worker first;
+
+    static {
+        System.setProperty("org.jvnet.zephyr.thread.continuation.ContinuationThreadImplProvider.executor",
+                Jsr166ForkJoinPoolExecutor.class.getName());
+        System.setProperty(Jsr166ForkJoinPoolExecutor.class.getName() + ".parallelism", Integer.toString(PARALLELISM));
+    }
+
+    @Setup(Level.Invocation)
+    public void setup() {
+        workers = new Worker[workerCount];
+        first = new Worker();
         Worker next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
@@ -48,9 +59,16 @@ public class ZephyrThreadRingBenchmark extends AbstractRingBenchmark {
 
         workers[0] = first;
         first.next = next;
+        first.waiting = true;
+        first.start();
+    }
+
+    @Benchmark
+    @Override
+    public final void benchmark() throws InterruptedException {
         first.message = ringSize;
         first.waiting = false;
-        first.start();
+        LockSupport.unpark(first);
 
         for (Worker worker : workers) {
             worker.join();

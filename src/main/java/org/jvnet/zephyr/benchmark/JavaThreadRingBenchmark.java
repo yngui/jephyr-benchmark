@@ -25,16 +25,20 @@
 package org.jvnet.zephyr.benchmark;
 
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Setup;
 
 import java.util.concurrent.locks.LockSupport;
 
 public class JavaThreadRingBenchmark extends AbstractRingBenchmark {
 
-    @Benchmark
-    @Override
-    public final void benchmark() throws InterruptedException {
-        Worker[] workers = new Worker[workerCount];
-        Worker first = new Worker();
+    private Worker[] workers;
+    private Worker first;
+
+    @Setup(Level.Invocation)
+    public void setup() {
+        workers = new Worker[workerCount];
+        first = new Worker();
         Worker next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
@@ -48,9 +52,16 @@ public class JavaThreadRingBenchmark extends AbstractRingBenchmark {
 
         workers[0] = first;
         first.next = next;
+        first.waiting = true;
+        first.start();
+    }
+
+    @Benchmark
+    @Override
+    public final void benchmark() throws InterruptedException {
         first.message = ringSize;
         first.waiting = false;
-        first.start();
+        LockSupport.unpark(first);
 
         for (Worker worker : workers) {
             worker.join();

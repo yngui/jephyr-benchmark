@@ -29,33 +29,51 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.TearDown;
 
 import java.util.concurrent.CountDownLatch;
 
 public class AkkaActorRingBenchmark extends AbstractRingBenchmark {
 
-    @Benchmark
-    @Override
-    public final void benchmark() throws InterruptedException {
-        ActorSystem system = ActorSystem.create();
-        CountDownLatch latch = new CountDownLatch(workerCount);
-        ActorRef[] workers = new ActorRef[workerCount];
-        ActorRef first = system.actorOf(Props.create(Worker.class, latch));
+    private ActorSystem system;
+    private CountDownLatch latch;
+    private ActorRef first;
+
+    static {
+        System.setProperty("akka.actor.default-dispatcher.fork-join-executor.parallelism-max",
+                Integer.toString(PARALLELISM));
+        System.setProperty("akka.actor.default-dispatcher.fork-join-executor.parallelism-max",
+                Integer.toString(PARALLELISM));
+    }
+
+    @Setup(Level.Invocation)
+    public void setup() {
+        system = ActorSystem.create();
+        latch = new CountDownLatch(workerCount);
+        first = system.actorOf(Props.create(Worker.class, latch));
         ActorRef next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
             ActorRef worker = system.actorOf(Props.create(Worker.class, latch));
-            workers[i] = worker;
             worker.tell(next, ActorRef.noSender());
             next = worker;
         }
 
-        workers[0] = first;
         first.tell(next, ActorRef.noSender());
-        first.tell(ringSize, ActorRef.noSender());
+    }
 
-        latch.await();
+    @TearDown(Level.Invocation)
+    public void tearDown() {
         system.shutdown();
+    }
+
+    @Benchmark
+    @Override
+    public final void benchmark() throws InterruptedException {
+        first.tell(ringSize, ActorRef.noSender());
+        latch.await();
     }
 
     private static final class Worker extends UntypedActor {

@@ -24,51 +24,55 @@
 
 package org.jvnet.zephyr.benchmark;
 
-import org.jvnet.zephyr.thread.continuation.AdaptingExecutor;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Setup;
 import scala.concurrent.forkjoin.ForkJoinPool;
 import scala.concurrent.forkjoin.ForkJoinTask;
 
-import static java.util.Objects.requireNonNull;
+public class ScalaForkJoinTaskRingBenchmark extends AbstractRingBenchmark {
 
-public final class ScalaForkJoinPoolExecutor extends ForkJoinPool implements AdaptingExecutor {
+    private final ForkJoinPool pool =
+            new ForkJoinPool(PARALLELISM, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+    private Worker[] workers;
+    private Worker first;
 
-    private static final String PARALLELISM = ScalaForkJoinPoolExecutor.class.getName() + ".parallelism";
+    @Setup(Level.Invocation)
+    public void setup() {
+        workers = new Worker[workerCount];
+        first = new Worker();
+        Worker next = first;
 
-    public ScalaForkJoinPoolExecutor() {
-        super(loadParallelism(), defaultForkJoinWorkerThreadFactory, null, true);
+        for (int i = workerCount - 1; i > 0; i--) {
+            Worker worker = new Worker();
+            workers[i] = worker;
+            worker.next = next;
+            next = worker;
+        }
+
+        workers[0] = first;
+        first.next = next;
     }
 
-    private static int loadParallelism() {
-        String s = System.getProperty(PARALLELISM);
-        return s == null ? Runtime.getRuntime().availableProcessors() : Integer.parseInt(s);
-    }
-
+    @Benchmark
     @Override
-    public void execute(Runnable task) {
-        if (task instanceof ForkJoinTask) {
-            if (ForkJoinTask.getPool() == this) {
-                ((ForkJoinTask<?>) task).fork();
-            } else {
-                execute((ForkJoinTask<?>) task);
-            }
-        } else {
-            execute((ForkJoinTask<?>) adapt(task));
+    public final void benchmark() {
+        first.message = ringSize;
+        pool.submit(first);
+
+        for (Worker worker : workers) {
+            worker.join();
         }
     }
 
-    @Override
-    public Runnable adapt(Runnable runnable) {
-        return new AdaptedRunnable(runnable);
-    }
-
-    private static final class AdaptedRunnable extends ForkJoinTask<Void> implements Runnable {
+    private static final class Worker extends ForkJoinTask<Void> {
 
         private static final long serialVersionUID = 1L;
 
-        private final Runnable runnable;
+        Worker next;
+        int message;
 
-        AdaptedRunnable(Runnable runnable) {
-            this.runnable = requireNonNull(runnable);
+        Worker() {
         }
 
         @Override
@@ -77,18 +81,20 @@ public final class ScalaForkJoinPoolExecutor extends ForkJoinPool implements Ada
         }
 
         @Override
-        public void setRawResult(Void v) {
+        protected void setRawResult(Void v) {
         }
 
         @Override
-        public boolean exec() {
-            run();
-            return false;
-        }
-
-        @Override
-        public void run() {
-            runnable.run();
+        protected boolean exec() {
+            int m = message;
+            next.message = m - 1;
+            next.fork();
+            if (m > 0) {
+                return false;
+            } else {
+                complete(null);
+                return true;
+            }
         }
     }
 }

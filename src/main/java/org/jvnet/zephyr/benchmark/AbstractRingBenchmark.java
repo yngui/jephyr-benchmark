@@ -30,12 +30,18 @@ import org.openjdk.jmh.annotations.State;
 @State(Scope.Benchmark)
 public abstract class AbstractRingBenchmark {
 
+    static final int PARALLELISM = loadParallelism();
     final int workerCount;
     final int ringSize;
 
-    protected AbstractRingBenchmark() {
+    AbstractRingBenchmark() {
         workerCount = Integer.parseInt(System.getProperty("workerCount"));
         ringSize = Integer.parseInt(System.getProperty("ringSize"));
+    }
+
+    private static int loadParallelism() {
+        String s = System.getProperty("parallelism");
+        return s == null ? Runtime.getRuntime().availableProcessors() : Integer.parseInt(s);
     }
 
     public abstract void benchmark() throws Exception;

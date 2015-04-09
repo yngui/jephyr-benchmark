@@ -24,66 +24,77 @@
 
 package org.jvnet.zephyr.benchmark;
 
-import co.paralleluniverse.actors.Actor;
-import co.paralleluniverse.actors.ActorRef;
-import co.paralleluniverse.fibers.SuspendExecution;
+import jsr166e.ForkJoinPool;
+import jsr166e.ForkJoinTask;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
 
-import java.util.concurrent.CountDownLatch;
+public class Jsr166ForkJoinTaskRingBenchmark extends AbstractRingBenchmark {
 
-public class QuasarActorRingBenchmark extends AbstractRingBenchmark {
-
-    private CountDownLatch latch;
-    private ActorRef<Object> first;
-
-    static {
-        System.setProperty("co.paralleluniverse.fibers.DefaultFiberPool.parallelism", Integer.toString(PARALLELISM));
-    }
+    private final ForkJoinPool pool =
+            new ForkJoinPool(PARALLELISM, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+    private Worker[] workers;
+    private Worker first;
 
     @Setup(Level.Invocation)
-    public void setup() throws SuspendExecution {
-        latch = new CountDownLatch(workerCount);
-        first = new Worker(latch).spawn();
-        ActorRef<Object> next = first;
+    public void setup() {
+        workers = new Worker[workerCount];
+        first = new Worker();
+        Worker next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
-            ActorRef<Object> worker = new Worker(latch).spawn();
-            worker.send(next);
+            Worker worker = new Worker();
+            workers[i] = worker;
+            worker.next = next;
             next = worker;
         }
 
-        first.send(next);
+        workers[0] = first;
+        first.next = next;
     }
 
     @Benchmark
     @Override
-    public final void benchmark() throws SuspendExecution, InterruptedException {
-        first.send(ringSize);
-        latch.await();
+    public final void benchmark() {
+        first.message = ringSize;
+        pool.submit(first);
+
+        for (Worker worker : workers) {
+            worker.join();
+        }
     }
 
-    private static final class Worker extends Actor<Object, Void> {
+    private static final class Worker extends ForkJoinTask<Void> {
 
-        private final CountDownLatch latch;
-        private ActorRef<Object> next;
+        private static final long serialVersionUID = 1L;
 
-        Worker(CountDownLatch latch) {
-            super(null, null);
-            this.latch = latch;
+        Worker next;
+        int message;
+
+        Worker() {
         }
 
         @Override
-        protected Void doRun() throws SuspendExecution, InterruptedException {
-            next = (ActorRef<Object>) receive();
-            int m;
-            do {
-                m = (int) receive();
-                next.send(m - 1);
-            } while (m > 0);
-            latch.countDown();
+        public Void getRawResult() {
             return null;
+        }
+
+        @Override
+        protected void setRawResult(Void v) {
+        }
+
+        @Override
+        protected boolean exec() {
+            int m = message;
+            next.message = m - 1;
+            next.fork();
+            if (m > 0) {
+                return false;
+            } else {
+                complete(null);
+                return true;
+            }
         }
     }
 }

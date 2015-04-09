@@ -28,16 +28,24 @@ import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Setup;
 
 import java.util.concurrent.ExecutionException;
 
 public class QuasarFiberRingBenchmark extends AbstractRingBenchmark {
 
-    @Benchmark
-    @Override
-    public final void benchmark() throws ExecutionException, InterruptedException {
-        Worker[] workers = new Worker[workerCount];
-        Worker first = new Worker();
+    private Worker[] workers;
+    private Worker first;
+
+    static {
+        System.setProperty("co.paralleluniverse.fibers.DefaultFiberPool.parallelism", Integer.toString(PARALLELISM));
+    }
+
+    @Setup(Level.Invocation)
+    public void setup() {
+        workers = new Worker[workerCount];
+        first = new Worker();
         Worker next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
@@ -51,9 +59,16 @@ public class QuasarFiberRingBenchmark extends AbstractRingBenchmark {
 
         workers[0] = first;
         first.next = next;
+        first.waiting = true;
+        first.start();
+    }
+
+    @Benchmark
+    @Override
+    public final void benchmark() throws ExecutionException, InterruptedException {
         first.message = ringSize;
         first.waiting = false;
-        first.start();
+        Strand.unpark(first);
 
         for (Worker worker : workers) {
             worker.join();

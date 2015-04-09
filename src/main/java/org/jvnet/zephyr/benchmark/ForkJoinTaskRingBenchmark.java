@@ -24,20 +24,24 @@
 
 package org.jvnet.zephyr.benchmark;
 
-import jsr166e.ForkJoinPool;
-import jsr166e.ForkJoinTask;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Setup;
+
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 
 public class ForkJoinTaskRingBenchmark extends AbstractRingBenchmark {
 
-    private final ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors(),
-            ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+    private final ForkJoinPool pool =
+            new ForkJoinPool(PARALLELISM, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+    private Worker[] workers;
+    private Worker first;
 
-    @Benchmark
-    @Override
-    public final void benchmark() {
-        Worker[] workers = new Worker[workerCount];
-        Worker first = new Worker();
+    @Setup(Level.Invocation)
+    public void setup() {
+        workers = new Worker[workerCount];
+        first = new Worker();
         Worker next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
@@ -49,6 +53,11 @@ public class ForkJoinTaskRingBenchmark extends AbstractRingBenchmark {
 
         workers[0] = first;
         first.next = next;
+    }
+
+    @Benchmark
+    @Override
+    public final void benchmark() {
         first.message = ringSize;
         pool.submit(first);
 

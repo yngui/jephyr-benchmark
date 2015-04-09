@@ -22,19 +22,18 @@
  * THE SOFTWARE.
  */
 
-package org.jvnet.zephyr.benchmark;
+package org.jvnet.zephyr.thread.continuation;
 
-import jsr166e.ForkJoinPool;
-import jsr166e.ForkJoinTask;
-import org.jvnet.zephyr.thread.continuation.AdaptingExecutor;
+import scala.concurrent.forkjoin.ForkJoinPool;
+import scala.concurrent.forkjoin.ForkJoinTask;
 
 import static java.util.Objects.requireNonNull;
 
-public final class Jsr166ForkJoinPoolExecutor extends ForkJoinPool implements AdaptingExecutor {
+public final class ScalaForkJoinPoolExecutor extends ForkJoinPool implements AdaptingExecutor {
 
-    private static final String PARALLELISM = Jsr166ForkJoinPoolExecutor.class.getName() + ".parallelism";
+    private static final String PARALLELISM = ScalaForkJoinPoolExecutor.class.getName() + ".parallelism";
 
-    public Jsr166ForkJoinPoolExecutor() {
+    public ScalaForkJoinPoolExecutor() {
         super(loadParallelism(), defaultForkJoinWorkerThreadFactory, null, true);
     }
 
