@@ -33,9 +33,11 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <aspectj.version>1.8.1</aspectj.version>
         <akka.version>2.3.9</akka.version>
         <quasar.version>0.6.2</quasar.version>
         <zephyr.version>1.0-SNAPSHOT</zephyr.version>
+        <activeobject.version>1.0-SNAPSHOT</activeobject.version>
         <jmh.version>1.7.1</jmh.version>
     </properties>
 
@@ -48,6 +50,36 @@
                     <source>1.7</source>
                     <target>1.7</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.7</version>
+                <configuration>
+                    <aspectLibraries>
+                        <aspectLibrary>
+                            <groupId>org.jvnet.zephyr.activeobject</groupId>
+                            <artifactId>activeobject-aspect</artifactId>
+                        </aspectLibrary>
+                    </aspectLibraries>
+                    <complianceLevel>1.7</complianceLevel>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>${aspectj.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jvnet.zephyr.maven</groupId>
@@ -171,6 +203,23 @@
             <groupId>org.jvnet.zephyr.jcl</groupId>
             <artifactId>jcl-jdk7</artifactId>
             <version>${zephyr.version}</version>
+            <classifier>javaflow</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnet.zephyr.activeobject</groupId>
+            <artifactId>activeobject-aspect</artifactId>
+            <version>${activeobject.version}</version>
+            <classifier>javaflow</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnet.zephyr.activeobject</groupId>
+            <artifactId>activeobject-aspect</artifactId>
+            <version>${activeobject.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnet.zephyr.activeobject</groupId>
+            <artifactId>activeobject-runtime</artifactId>
+            <version>${activeobject.version}</version>
             <classifier>javaflow</classifier>
         </dependency>
         <dependency>
