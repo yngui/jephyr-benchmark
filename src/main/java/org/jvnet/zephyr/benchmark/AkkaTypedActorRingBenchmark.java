@@ -24,71 +24,103 @@
 
 package org.jvnet.zephyr.benchmark;
 
-import org.jvnet.zephyr.activeobject.annotation.Active;
-import org.jvnet.zephyr.activeobject.annotation.Oneway;
-import org.jvnet.zephyr.thread.continuation.Jsr166ForkJoinPoolExecutor;
+import akka.actor.ActorSystem;
+import akka.actor.TypedActor;
+import akka.actor.TypedProps;
+import akka.japi.Creator;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.TearDown;
 
 import java.util.concurrent.CountDownLatch;
 
-public class ActiveObjectRingBenchmark extends AbstractRingBenchmark {
+public class AkkaTypedActorRingBenchmark extends AbstractRingBenchmark {
 
+    private ActorSystem system;
     private CountDownLatch latch;
     private Worker first;
 
     static {
-        System.setProperty("org.jvnet.zephyr.thread.continuation.ContinuationThreadImplProvider.executor",
-                Jsr166ForkJoinPoolExecutor.class.getName());
-        System.setProperty(Jsr166ForkJoinPoolExecutor.class.getName() + ".parallelism", Integer.toString(PARALLELISM));
+        System.setProperty("akka.actor.default-dispatcher.fork-join-executor.parallelism-max",
+                Integer.toString(PARALLELISM));
+        System.setProperty("akka.actor.default-dispatcher.fork-join-executor.parallelism-max",
+                Integer.toString(PARALLELISM));
     }
 
     @Setup(Level.Invocation)
     public void setup() {
+        system = ActorSystem.create();
         latch = new CountDownLatch(workerCount);
-        first = new Worker(latch);
+        first = TypedActor.get(system).typedActorOf(new TypedProps<>(Worker.class, new WorkerImplCreator(latch)));
         Worker next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
-            Worker worker = new Worker(latch);
-            worker.link(next);
+            Worker worker =
+                    TypedActor.get(system).typedActorOf(new TypedProps<>(Worker.class, new WorkerImplCreator(latch)));
+            worker.setNext(next);
             next = worker;
         }
 
-        first.link(next);
+        first.setNext(next);
+    }
+
+    @TearDown(Level.Invocation)
+    public void tearDown() {
+        system.shutdown();
     }
 
     @Benchmark
     @Override
     public final void benchmark() throws InterruptedException {
-        first.receive(ringSize);
+        first.send(ringSize);
         latch.await();
     }
 
-    @Active
-    private static final class Worker {
+    public interface Worker {
+
+        void setNext(Worker next);
+
+        void send(int message);
+    }
+
+    public static final class WorkerImpl implements Worker {
 
         private final CountDownLatch latch;
         private Worker next;
 
-        Worker(CountDownLatch latch) {
+        WorkerImpl(CountDownLatch latch) {
             this.latch = latch;
         }
 
-        public void link(Worker next) {
+        @Override
+        public void setNext(Worker next) {
             this.next = next;
         }
 
-        @Oneway
-        public void receive(int message) {
-            if (next != null) {
-                next.receive(message - 1);
-                if (message <= 0) {
-                    next = null;
-                    latch.countDown();
-                }
+        @Override
+        public void send(int message) {
+            next.send(message - 1);
+            if (message <= 0) {
+                TypedActor.get(TypedActor.context().system()).stop(TypedActor.self());
+                latch.countDown();
             }
+        }
+    }
+
+    private static final class WorkerImplCreator implements Creator<WorkerImpl> {
+
+        private static final long serialVersionUID = 1L;
+
+        private final CountDownLatch latch;
+
+        WorkerImplCreator(CountDownLatch latch) {
+            this.latch = latch;
+        }
+
+        @Override
+        public WorkerImpl create() {
+            return new WorkerImpl(latch);
         }
     }
 }
