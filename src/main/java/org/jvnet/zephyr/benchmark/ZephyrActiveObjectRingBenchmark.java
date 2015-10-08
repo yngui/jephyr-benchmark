@@ -24,9 +24,9 @@
 
 package org.jvnet.zephyr.benchmark;
 
-import org.jvnet.zephyr.activeobject.annotation.Active;
+import org.jvnet.zephyr.activeobject.annotation.ActiveMethod;
+import org.jvnet.zephyr.activeobject.annotation.ActiveObject;
 import org.jvnet.zephyr.activeobject.annotation.Oneway;
-import org.jvnet.zephyr.thread.continuation.Jsr166ForkJoinPoolExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
@@ -39,9 +39,8 @@ public class ZephyrActiveObjectRingBenchmark extends AbstractRingBenchmark {
     private Worker first;
 
     static {
-        System.setProperty("org.jvnet.zephyr.thread.continuation.ContinuationThreadImplProvider.executor",
-                Jsr166ForkJoinPoolExecutor.class.getName());
-        System.setProperty(Jsr166ForkJoinPoolExecutor.class.getName() + ".parallelism", Integer.toString(PARALLELISM));
+        System.setProperty("org.jvnet.zephyr.thread.continuation.DefaultForkJoinPoolProvider.parallelism",
+                Integer.toString(PARALLELISM));
     }
 
     @Setup(Level.Invocation)
@@ -66,7 +65,7 @@ public class ZephyrActiveObjectRingBenchmark extends AbstractRingBenchmark {
         latch.await();
     }
 
-    @Active
+    @ActiveObject
     private static final class Worker {
 
         private final CountDownLatch latch;
@@ -76,12 +75,13 @@ public class ZephyrActiveObjectRingBenchmark extends AbstractRingBenchmark {
             this.latch = latch;
         }
 
-        public void link(Worker next) {
+        void link(Worker next) {
             this.next = next;
         }
 
+        @ActiveMethod
         @Oneway
-        public void receive(int message) {
+        void receive(int message) {
             if (next != null) {
                 next.receive(message - 1);
                 if (message <= 0) {

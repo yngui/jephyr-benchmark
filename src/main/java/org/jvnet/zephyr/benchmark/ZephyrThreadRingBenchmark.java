@@ -24,7 +24,6 @@
 
 package org.jvnet.zephyr.benchmark;
 
-import org.jvnet.zephyr.thread.continuation.Jsr166ForkJoinPoolExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
@@ -37,9 +36,8 @@ public class ZephyrThreadRingBenchmark extends AbstractRingBenchmark {
     private Worker first;
 
     static {
-        System.setProperty("org.jvnet.zephyr.thread.continuation.ContinuationThreadImplProvider.executor",
-                Jsr166ForkJoinPoolExecutor.class.getName());
-        System.setProperty(Jsr166ForkJoinPoolExecutor.class.getName() + ".parallelism", Integer.toString(PARALLELISM));
+        System.setProperty("org.jvnet.zephyr.thread.continuation.DefaultForkJoinPoolProvider.parallelism",
+                Integer.toString(PARALLELISM));
     }
 
     @Setup(Level.Invocation)

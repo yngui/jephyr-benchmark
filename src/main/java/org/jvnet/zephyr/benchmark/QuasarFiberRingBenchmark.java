@@ -77,7 +77,7 @@ public class QuasarFiberRingBenchmark extends AbstractRingBenchmark {
 
     private static final class Worker extends Fiber<Void> {
 
-        private static final long serialVersionUID = 1;
+        private static final long serialVersionUID = 1L;
 
         Worker next;
         int message;
