@@ -172,43 +172,43 @@
             <groupId>org.jvnet.zephyr.thread</groupId>
             <artifactId>thread-api</artifactId>
             <version>${zephyr.version}</version>
-            <classifier>remapped-easyflow</classifier>
+            <classifier>easyflow</classifier>
         </dependency>
         <dependency>
             <groupId>org.jvnet.zephyr.thread</groupId>
             <artifactId>thread-continuation</artifactId>
             <version>${zephyr.version}</version>
-            <classifier>remapped-easyflow</classifier>
+            <classifier>easyflow</classifier>
         </dependency>
         <dependency>
             <groupId>org.jvnet.zephyr.jcl</groupId>
             <artifactId>jcl-jdk8</artifactId>
             <version>${zephyr.version}</version>
-            <classifier>remapped-easyflow</classifier>
+            <classifier>easyflow</classifier>
         </dependency>
         <dependency>
             <groupId>org.jvnet.zephyr.activeobject</groupId>
             <artifactId>activeobject-runtime</artifactId>
             <version>${zephyr.version}</version>
-            <classifier>remapped-easyflow</classifier>
+            <classifier>easyflow</classifier>
         </dependency>
         <dependency>
             <groupId>org.jvnet.zephyr.common</groupId>
             <artifactId>common-util</artifactId>
             <version>${zephyr.version}</version>
-            <classifier>remapped-easyflow</classifier>
+            <classifier>easyflow</classifier>
         </dependency>
         <dependency>
             <groupId>org.jvnet.zephyr.continuation</groupId>
             <artifactId>continuation-api</artifactId>
             <version>${zephyr.version}</version>
-            <classifier>remapped-easyflow</classifier>
+            <classifier>easyflow</classifier>
         </dependency>
         <dependency>
             <groupId>org.jvnet.zephyr.continuation</groupId>
             <artifactId>continuation-easyflow</artifactId>
             <version>${zephyr.version}</version>
-            <classifier>remapped-easyflow</classifier>
+            <classifier>easyflow</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
