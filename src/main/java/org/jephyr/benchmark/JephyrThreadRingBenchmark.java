@@ -22,73 +22,79 @@
  * THE SOFTWARE.
  */
 
-package org.jvnet.zephyr.benchmark;
+package org.jephyr.benchmark;
 
-import org.jvnet.zephyr.activeobject.annotation.ActiveMethod;
-import org.jvnet.zephyr.activeobject.annotation.ActiveObject;
-import org.jvnet.zephyr.activeobject.annotation.Oneway;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.LockSupport;
 
-public class ZephyrActiveObjectRingBenchmark extends AbstractRingBenchmark {
+public class JephyrThreadRingBenchmark extends AbstractRingBenchmark {
 
-    private CountDownLatch latch;
+    private Worker[] workers;
     private Worker first;
 
     static {
-        System.setProperty("org.jvnet.zephyr.thread.continuation.DefaultForkJoinPoolProvider.parallelism",
+        System.setProperty("org.jephyr.thread.continuation.DefaultForkJoinPoolProvider.parallelism",
                 Integer.toString(PARALLELISM));
     }
 
     @Setup(Level.Invocation)
     public void setup() {
-        latch = new CountDownLatch(workerCount);
-        first = new Worker(latch);
+        workers = new Worker[workerCount];
+        first = new Worker();
         Worker next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
-            Worker worker = new Worker(latch);
-            worker.link(next);
+            Worker worker = new Worker();
+            workers[i] = worker;
+            worker.next = next;
+            worker.waiting = true;
+            worker.start();
             next = worker;
         }
 
-        first.link(next);
+        workers[0] = first;
+        first.next = next;
+        first.waiting = true;
+        first.start();
     }
 
     @Benchmark
     @Override
     public final void benchmark() throws InterruptedException {
-        first.receive(ringSize);
-        latch.await();
+        first.message = ringSize;
+        first.waiting = false;
+        LockSupport.unpark(first);
+
+        for (Worker worker : workers) {
+            worker.join();
+        }
     }
 
-    @ActiveObject
-    private static final class Worker {
+    private static final class Worker extends Thread {
 
-        private final CountDownLatch latch;
-        private Worker next;
+        Worker next;
+        int message;
+        volatile boolean waiting;
 
-        Worker(CountDownLatch latch) {
-            this.latch = latch;
+        Worker() {
         }
 
-        void link(Worker next) {
-            this.next = next;
-        }
-
-        @ActiveMethod
-        @Oneway
-        void receive(int message) {
-            if (next != null) {
-                next.receive(message - 1);
-                if (message <= 0) {
-                    next = null;
-                    latch.countDown();
+        @Override
+        public void run() {
+            int m;
+            do {
+                while (waiting) {
+                    LockSupport.park();
                 }
-            }
+                m = message;
+                waiting = true;
+                next.message = m - 1;
+                next.waiting = false;
+                LockSupport.unpark(next);
+            } while (m > 0);
         }
     }
 }

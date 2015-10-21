@@ -22,12 +22,12 @@
  * THE SOFTWARE.
  */
 
-package org.jvnet.zephyr.benchmark;
+package org.jephyr.benchmark;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.TypedActor;
-import akka.actor.TypedProps;
-import akka.japi.Creator;
+import akka.actor.Props;
+import akka.actor.UntypedActor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
@@ -35,11 +35,11 @@ import org.openjdk.jmh.annotations.TearDown;
 
 import java.util.concurrent.CountDownLatch;
 
-public class AkkaTypedActorRingBenchmark extends AbstractRingBenchmark {
+public class AkkaActorRingBenchmark extends AbstractRingBenchmark {
 
     private ActorSystem system;
     private CountDownLatch latch;
-    private Worker first;
+    private ActorRef first;
 
     static {
         System.setProperty("akka.actor.default-dispatcher.fork-join-executor.parallelism-max",
@@ -52,17 +52,16 @@ public class AkkaTypedActorRingBenchmark extends AbstractRingBenchmark {
     public void setup() {
         system = ActorSystem.create();
         latch = new CountDownLatch(workerCount);
-        first = TypedActor.get(system).typedActorOf(new TypedProps<>(Worker.class, new WorkerImplCreator(latch)));
-        Worker next = first;
+        first = system.actorOf(Props.create(Worker.class, latch));
+        ActorRef next = first;
 
         for (int i = workerCount - 1; i > 0; i--) {
-            Worker worker =
-                    TypedActor.get(system).typedActorOf(new TypedProps<>(Worker.class, new WorkerImplCreator(latch)));
-            worker.setNext(next);
+            ActorRef worker = system.actorOf(Props.create(Worker.class, latch));
+            worker.tell(next, ActorRef.noSender());
             next = worker;
         }
 
-        first.setNext(next);
+        first.tell(next, ActorRef.noSender());
     }
 
     @TearDown(Level.Invocation)
@@ -73,54 +72,33 @@ public class AkkaTypedActorRingBenchmark extends AbstractRingBenchmark {
     @Benchmark
     @Override
     public final void benchmark() throws InterruptedException {
-        first.send(ringSize);
+        first.tell(ringSize, ActorRef.noSender());
         latch.await();
     }
 
-    public interface Worker {
-
-        void setNext(Worker next);
-
-        void send(int message);
-    }
-
-    public static final class WorkerImpl implements Worker {
+    private static final class Worker extends UntypedActor {
 
         private final CountDownLatch latch;
-        private Worker next;
+        private ActorRef next;
 
-        WorkerImpl(CountDownLatch latch) {
+        Worker(CountDownLatch latch) {
             this.latch = latch;
         }
 
         @Override
-        public void setNext(Worker next) {
-            this.next = next;
-        }
-
-        @Override
-        public void send(int message) {
-            next.send(message - 1);
-            if (message <= 0) {
-                TypedActor.get(TypedActor.context().system()).stop(TypedActor.self());
-                latch.countDown();
+        public void onReceive(Object message) throws Exception {
+            if (message instanceof Integer) {
+                int m = (int) message;
+                next.tell(m - 1, getSelf());
+                if (m <= 0) {
+                    getContext().stop(getSelf());
+                    latch.countDown();
+                }
+            } else if (message instanceof ActorRef) {
+                next = (ActorRef) message;
+            } else {
+                unhandled(message);
             }
-        }
-    }
-
-    private static final class WorkerImplCreator implements Creator<WorkerImpl> {
-
-        private static final long serialVersionUID = 1L;
-
-        private final CountDownLatch latch;
-
-        WorkerImplCreator(CountDownLatch latch) {
-            this.latch = latch;
-        }
-
-        @Override
-        public WorkerImpl create() {
-            return new WorkerImpl(latch);
         }
     }
 }

@@ -22,25 +22,18 @@
  * THE SOFTWARE.
  */
 
-package org.jvnet.zephyr.benchmark;
+package org.jephyr.benchmark;
 
-import co.paralleluniverse.fibers.Fiber;
-import co.paralleluniverse.fibers.SuspendExecution;
-import co.paralleluniverse.strands.Strand;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
 
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.LockSupport;
 
-public class QuasarFiberRingBenchmark extends AbstractRingBenchmark {
+public class JavaThreadRingBenchmark extends AbstractRingBenchmark {
 
     private Worker[] workers;
     private Worker first;
-
-    static {
-        System.setProperty("co.paralleluniverse.fibers.DefaultFiberPool.parallelism", Integer.toString(PARALLELISM));
-    }
 
     @Setup(Level.Invocation)
     public void setup() {
@@ -65,19 +58,17 @@ public class QuasarFiberRingBenchmark extends AbstractRingBenchmark {
 
     @Benchmark
     @Override
-    public final void benchmark() throws ExecutionException, InterruptedException {
+    public final void benchmark() throws InterruptedException {
         first.message = ringSize;
         first.waiting = false;
-        Strand.unpark(first);
+        LockSupport.unpark(first);
 
         for (Worker worker : workers) {
             worker.join();
         }
     }
 
-    private static final class Worker extends Fiber<Void> {
-
-        private static final long serialVersionUID = 1L;
+    private static final class Worker extends Thread {
 
         Worker next;
         int message;
@@ -87,19 +78,18 @@ public class QuasarFiberRingBenchmark extends AbstractRingBenchmark {
         }
 
         @Override
-        public Void run() throws SuspendExecution {
+        public void run() {
             int m;
             do {
                 while (waiting) {
-                    Strand.park();
+                    LockSupport.park();
                 }
                 m = message;
                 waiting = true;
                 next.message = m - 1;
                 next.waiting = false;
-                Strand.unpark(next);
+                LockSupport.unpark(next);
             } while (m > 0);
-            return null;
         }
     }
 }
