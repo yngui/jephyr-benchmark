@@ -79,11 +79,11 @@
                     <mappingEntries>
                         <mappingEntry>
                             <oldName>java/lang/Thread</oldName>
-                            <newName>org/jvnet/zephyr/jcl/java/lang/Thread</newName>
+                            <newName>org/jvnet/zephyr/integration/javase/java/lang/Thread</newName>
                         </mappingEntry>
                         <mappingEntry>
                             <oldName>java/util/concurrent/locks/LockSupport</oldName>
-                            <newName>org/jvnet/zephyr/jcl/java/util/concurrent/locks/LockSupport</newName>
+                            <newName>org/jvnet/zephyr/integration/javase/java/util/concurrent/locks/LockSupport</newName>
                         </mappingEntry>
                     </mappingEntries>
                 </configuration>
@@ -181,8 +181,8 @@
             <classifier>easyflow</classifier>
         </dependency>
         <dependency>
-            <groupId>org.jvnet.zephyr.jcl</groupId>
-            <artifactId>jcl-jdk8</artifactId>
+            <groupId>org.jvnet.zephyr.integration.javase</groupId>
+            <artifactId>javase-1.8</artifactId>
             <version>${zephyr.version}</version>
             <classifier>easyflow</classifier>
         </dependency>
