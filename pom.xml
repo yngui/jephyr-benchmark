@@ -193,12 +193,6 @@
             <classifier>easyflow</classifier>
         </dependency>
         <dependency>
-            <groupId>org.jephyr.common</groupId>
-            <artifactId>common-util</artifactId>
-            <version>${jephyr.version}</version>
-            <classifier>easyflow</classifier>
-        </dependency>
-        <dependency>
             <groupId>org.jephyr.continuation</groupId>
             <artifactId>continuation-api</artifactId>
             <version>${jephyr.version}</version>
