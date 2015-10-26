@@ -79,11 +79,11 @@
                     <mappingEntries>
                         <mappingEntry>
                             <oldName>java/lang/Thread</oldName>
-                            <newName>org/jephyr/integration/javase/java/lang/Thread</newName>
+                            <newName>jephyr/java/lang/Thread</newName>
                         </mappingEntry>
                         <mappingEntry>
                             <oldName>java/util/concurrent/locks/LockSupport</oldName>
-                            <newName>org/jephyr/integration/javase/java/util/concurrent/locks/LockSupport</newName>
+                            <newName>jephyr/java/util/concurrent/locks/LockSupport</newName>
                         </mappingEntry>
                     </mappingEntries>
                 </configuration>
