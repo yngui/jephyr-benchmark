@@ -24,11 +24,11 @@
 
 package org.jephyr.benchmark;
 
+import java.util.concurrent.locks.LockSupport;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
-
-import java.util.concurrent.locks.LockSupport;
 
 public class JephyrThreadRingBenchmark extends AbstractRingBenchmark {
 

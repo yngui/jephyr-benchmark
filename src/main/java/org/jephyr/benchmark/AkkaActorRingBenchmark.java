@@ -24,6 +24,8 @@
 
 package org.jephyr.benchmark;
 
+import java.util.concurrent.CountDownLatch;
+
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -32,8 +34,6 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
-
-import java.util.concurrent.CountDownLatch;
 
 public class AkkaActorRingBenchmark extends AbstractRingBenchmark {
 

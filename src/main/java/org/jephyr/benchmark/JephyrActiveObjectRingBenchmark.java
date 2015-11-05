@@ -24,14 +24,14 @@
 
 package org.jephyr.benchmark;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.jephyr.activeobject.annotation.ActiveMethod;
 import org.jephyr.activeobject.annotation.ActiveObject;
 import org.jephyr.activeobject.annotation.Oneway;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
-
-import java.util.concurrent.CountDownLatch;
 
 public class JephyrActiveObjectRingBenchmark extends AbstractRingBenchmark {
 

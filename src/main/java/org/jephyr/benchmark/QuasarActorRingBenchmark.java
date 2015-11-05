@@ -24,14 +24,14 @@
 
 package org.jephyr.benchmark;
 
+import java.util.concurrent.CountDownLatch;
+
 import co.paralleluniverse.actors.Actor;
 import co.paralleluniverse.actors.ActorRef;
 import co.paralleluniverse.fibers.SuspendExecution;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
-
-import java.util.concurrent.CountDownLatch;
 
 public class QuasarActorRingBenchmark extends AbstractRingBenchmark {
 

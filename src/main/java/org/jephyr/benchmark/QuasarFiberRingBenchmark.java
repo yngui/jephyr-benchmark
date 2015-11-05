@@ -24,14 +24,14 @@
 
 package org.jephyr.benchmark;
 
+import java.util.concurrent.ExecutionException;
+
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
-
-import java.util.concurrent.ExecutionException;
 
 public class QuasarFiberRingBenchmark extends AbstractRingBenchmark {
 
