@@ -181,8 +181,8 @@
             <classifier>easyflow</classifier>
         </dependency>
         <dependency>
-            <groupId>org.jephyr.integration.javase</groupId>
-            <artifactId>javase-1.8</artifactId>
+            <groupId>org.jephyr.integration.openjdk</groupId>
+            <artifactId>openjdk-8</artifactId>
             <version>${jephyr.version}</version>
             <classifier>easyflow</classifier>
         </dependency>
